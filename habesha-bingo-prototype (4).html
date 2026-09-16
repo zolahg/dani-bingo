@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dani Bingo — Prototype</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="D.Bingo">
+<meta name="theme-color" content="#15161a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2315161a'/%3E%3Ctext x='12' y='17' font-size='13' font-weight='800' fill='%23f2a33c' text-anchor='middle' font-family='sans-serif'%3ED%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#15161a;
+    --panel:#1c1e26;
+    --panel-2:#242732;
+    --line:rgba(242,163,60,0.14);
+    --ink:#f2a33c;
+    --text:#f4f1ea;
+    --text-dim:#9a9ba3;
+    --win:#3fbf8f;
+    --lose:#e2574c;
+    --bingo:#3b82f6;
+  }
+  html[data-theme="light"]{
+    --bg:#f5f3ee;
+    --panel:#ffffff;
+    --panel-2:#eef0f4;
+    --line:rgba(197,120,20,0.18);
+    --ink:#c07a14;
+    --text:#22242b;
+    --text-dim:#6b6e78;
+    --win:#1f9968;
+    --lose:#c8433a;
+    --bingo:#2563eb;
+  }
+  html[data-theme="light"] .cell{ box-shadow:inset 0 -2px 0 rgba(0,0,0,0.06); }
+  html[data-theme="light"] .ball{ color:#3a2205; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overscroll-behavior:none;}
+  body{padding-bottom:28px;}
+  .wrap{max-width:480px; margin:0 auto; padding:14px 16px 40px; position:relative;}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:10px 2px 16px; gap:8px;}
+  .brand{display:flex; flex-direction:column; line-height:1.1;}
+  .brand b{font-size:19px; letter-spacing:0.2px;}
+  .brand span{font-size:11.5px; color:var(--text-dim); margin-top:2px;}
+  .top-right{display:flex; align-items:center; gap:6px;}
+  .wallet{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px 12px; text-align:right;}
+  .wallet .amt{font-size:15px; font-weight:700; color:var(--ink);}
+  .wallet .lbl{font-size:10px; color:var(--text-dim); margin-top:1px;}
+  .admin-toggle{background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer;}
+  .theme-toggle{background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:14px; cursor:pointer; line-height:1;}
+  .toast-wrap{position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:999; display:flex; flex-direction:column; gap:8px; align-items:center; width:100%; max-width:460px; padding:0 16px; pointer-events:none;}
+  .toast{background:var(--panel); border:1px solid var(--win); color:var(--win); font-size:13px; font-weight:700; padding:10px 16px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.35); opacity:0; transform:translateY(-10px); transition:opacity .2s ease, transform .2s ease; max-width:100%;}
+  .toast.show{opacity:1; transform:translateY(0);}
+  .col-mini{display:none; align-items:center; gap:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:5px 8px;}
+  .col-mini span{font-size:10px; color:var(--text-dim);}
+  .col-mini select{background:transparent; color:var(--ink); border:none; font-size:12px; font-weight:700;}
+
+  .card-block{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px;}
+  .section-title{font-size:13px; color:var(--text-dim); margin:0 0 10px;}
+
+  .cartela-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .cartela-btn{background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:10px 4px; text-align:center; color:var(--text); font-size:13px; font-weight:600; cursor:pointer;}
+  .pot-line{display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim); margin-top:12px;}
+  .pot-line b{color:var(--text);}
+
+  .search-row{display:flex; gap:8px; margin-top:10px;}
+  .search-row input{flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; color:var(--text); font-size:14px;}
+  .search-row button{flex-shrink:0; background:var(--panel-2); border:1px solid var(--ink); color:var(--ink); border-radius:10px; padding:0 16px; font-weight:700; cursor:pointer;}
+
+  .chips-wrap{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;}
+  .chip-id{display:flex; align-items:center; gap:6px; background:var(--panel-2); border:1px solid var(--line); border-radius:20px; padding:5px 6px 5px 12px; font-size:12px; font-weight:700; color:var(--text);}
+  .chip-id button{background:none; border:none; color:var(--text-dim); font-size:14px; cursor:pointer; line-height:1;}
+
+  .pattern-list{display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto; padding-right:2px;}
+  .pattern-opt{display:flex; align-items:center; gap:12px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; cursor:pointer;}
+  .pattern-opt.active{border-color:var(--ink); background:rgba(242,163,60,0.12);}
+  .pattern-opt .mini-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:2px; width:48px; height:48px; flex-shrink:0;}
+  .pattern-opt .mini-grid div{background:#2b2f3b; border-radius:2px;}
+  .pattern-opt .mini-grid div.on{background:var(--ink);}
+  .pattern-opt .p-text b{display:block; font-size:13px; color:var(--text);}
+  .pattern-opt .p-text span{font-size:11px; color:var(--text-dim);}
+  .active-pattern-tag{display:inline-block; font-size:11.5px; color:var(--ink); background:rgba(242,163,60,0.12); border:1px solid var(--line); border-radius:20px; padding:3px 10px; margin-bottom:8px;}
+
+  .current-game-card{display:flex; align-items:center; gap:14px; background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:12px;}
+  .current-game-card .mini-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:2px; width:52px; height:52px; flex-shrink:0;}
+  .current-game-card .mini-grid div{background:#2b2f3b; border-radius:2px;}
+  .current-game-card .mini-grid div.on{background:var(--ink);}
+  .current-game-card .g-text b{display:block; font-size:15px;}
+  .current-game-card .g-text span{font-size:12px; color:var(--text-dim);}
+  .game-figs{display:flex; gap:16px; margin-top:12px;}
+  .game-figs div{flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:10px; text-align:center;}
+  .game-figs div b{display:block; font-size:16px; color:var(--ink);}
+  .game-figs div span{font-size:11px; color:var(--text-dim);}
+
+  .admin-field{margin-top:14px;}
+  .admin-field label{display:block; font-size:12.5px; color:var(--text-dim); margin-bottom:6px;}
+  .admin-field input{width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; color:var(--text); font-size:15px;}
+  .admin-actions{display:flex; gap:8px; margin-top:16px;}
+  .admin-actions .primary-btn, .admin-actions .ghost-btn{margin-top:0;}
+
+  .primary-btn{width:100%; padding:14px; border:none; border-radius:12px; background:var(--ink); color:#15161a; font-size:15px; font-weight:800; letter-spacing:0.2px; cursor:pointer; margin-top:12px;}
+  .primary-btn:disabled{opacity:0.4;}
+  .ghost-btn{width:100%; padding:12px; border:1px solid var(--line); border-radius:12px; background:transparent; color:var(--text); font-size:14px; font-weight:600; cursor:pointer;}
+
+  .caller{display:flex; align-items:center; gap:14px;}
+  .ball{width:78px; height:78px; border-radius:50%; background:radial-gradient(circle at 32% 26%, #ffe6b3, #ffb84d 45%, var(--ink) 85%); display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; color:#3a2205; flex-shrink:0; box-shadow:0 0 0 4px rgba(242,163,60,0.14), 0 6px 14px rgba(0,0,0,0.35), inset 0 -6px 10px rgba(0,0,0,0.15);}
+  .ball.empty{background:var(--panel-2); color:var(--text-dim); font-size:13px; font-weight:600; box-shadow:inset 0 -4px 8px rgba(0,0,0,0.2);}
+  .ball.countdown{background:radial-gradient(circle at 32% 26%, #c9f5e2, #6fe0af 45%, var(--win) 85%); color:#0d2b1e; box-shadow:0 0 0 4px rgba(63,191,143,0.16), 0 6px 14px rgba(0,0,0,0.35);}
+  .call-meta{flex:1;}
+  .call-meta .letter{font-size:12px; color:var(--text-dim); letter-spacing:2px;}
+  .history{display:flex; gap:6px; overflow-x:auto; margin-top:12px; padding-bottom:2px;}
+  .history .chip{flex-shrink:0; width:28px; height:28px; border-radius:50%; background:linear-gradient(160deg,#2f3341,#232633); color:var(--text-dim); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; border:1px solid var(--line);}
+
+  .controls-row{display:flex; gap:8px; margin-top:12px;}
+  .controls-row .ghost-btn{flex:1; margin-top:0;}
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; margin-top:12px; font-size:13.5px;}
+  .switch{width:42px; height:24px; border-radius:12px; background:var(--panel-2); position:relative; cursor:pointer; border:1px solid var(--line);}
+  .switch.on{background:rgba(63,191,143,0.25); border-color:var(--win);}
+  .switch .knob{position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--text-dim); transition:left .15s;}
+  .switch.on .knob{left:20px; background:var(--win);}
+
+  .cards-grid{display:grid; gap:10px;}
+  .mini-card{background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:8px;}
+  .mini-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:4px;}
+  .mini-card-head b{font-size:11.5px;}
+  .mini-card-head .cid{font-size:9.5px; color:var(--text-dim); display:block;}
+  .mini-status{font-size:9px; font-weight:800; padding:2px 6px; border-radius:8px; text-transform:uppercase; letter-spacing:0.3px; flex-shrink:0;}
+  .mini-status.active{color:var(--win); background:rgba(63,191,143,0.14);}
+  .mini-status.blocked{color:var(--lose); background:rgba(226,87,76,0.14);}
+  .mini-status.won{color:var(--ink); background:rgba(242,163,60,0.18);}
+
+  .bingo-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:4px;}
+  .cell{aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:7px; background:linear-gradient(160deg,#30354420,#2b2f3b); font-size:11.5px; font-weight:800; color:var(--text); border:1px solid var(--line); cursor:pointer; user-select:none; box-shadow:inset 0 -2px 0 rgba(0,0,0,0.25); transition:transform .08s ease;}
+  .cell.free{background:linear-gradient(160deg,rgba(242,163,60,0.22),rgba(242,163,60,0.1)); color:var(--ink); font-size:8px; box-shadow:none;}
+  .cell.marked{background:linear-gradient(160deg,#ffd48a,var(--ink)); color:#15161a; box-shadow:0 0 0 2px rgba(242,163,60,0.25), inset 0 -2px 0 rgba(0,0,0,0.15); transform:scale(1.03);}
+  .bingo-grid.blocked-grid{opacity:0.35; pointer-events:none;}
+  .mini-bingo-btn{margin-top:8px; padding:9px; font-size:12.5px; border:none; border-radius:10px; background:linear-gradient(160deg,#5b96fb,var(--bingo)); color:#fff; font-weight:800; cursor:pointer; width:100%; box-shadow:0 3px 0 rgba(0,0,0,0.2);}
+  .mini-bingo-btn:disabled{opacity:0.35; cursor:default; box-shadow:none;}
+  .mini-bingo-btn.won-btn{background:linear-gradient(160deg,#7be0bb,var(--win)); color:#0d221a;}
+  .mini-card-foot{margin-top:7px; text-align:center; font-size:10.5px; color:var(--text-dim); font-weight:600;}
+
+  .win-banner{display:none; text-align:center; padding:16px; border-radius:14px; background:rgba(63,191,143,0.14); border:1px solid var(--win); color:var(--win); font-weight:800; font-size:16px; margin-bottom:14px;}
+  .win-banner.show{display:block;}
+
+  .footnote{font-size:11.5px; color:var(--text-dim); text-align:center; margin-top:18px; line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <b>Dani Bingo</b>
+      <span id="modeLabel">Prototype · player view</span>
+    </div>
+    <div class="top-right">
+      <div class="col-mini" id="colMiniBox">
+        <span>Cols</span>
+        <select id="colMiniSelect">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div class="theme-toggle" id="themeToggleBtn">🌙</div>
+      <div class="admin-toggle" id="adminToggleBtn">Admin</div>
+      <div class="wallet">
+        <div class="amt" id="walletAmt">500 ETB</div>
+        <div class="lbl">demo balance</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <div class="win-banner" id="winBanner">🎉 BINGO! You matched a winning pattern.</div>
+
+  <!-- ADMIN VIEW -->
+  <div class="card-block" id="adminBlock" style="display:none;">
+    <div class="section-title">Admin — set up the next round</div>
+    <div class="pattern-list" id="adminPatternList"></div>
+    <div class="admin-field">
+      <label>Stake per cartela (ETB)</label>
+      <input type="number" id="adminStakeInput" min="1" value="10">
+    </div>
+    <div class="admin-field">
+      <label>Total prize for this round (ETB)</label>
+      <input type="number" id="adminPrizeInput" min="1" value="80">
+    </div>
+    <div class="admin-field">
+      <label>Countdown before first number (seconds)</label>
+      <input type="number" id="adminCountdownInput" min="3" max="60" value="15">
+    </div>
+    <div class="admin-actions">
+      <button class="ghost-btn" id="adminCancelBtn">Cancel</button>
+      <button class="primary-btn" id="adminSaveBtn">Save &amp; publish</button>
+    </div>
+  </div>
+
+  <!-- PLAYER VIEW -->
+  <div id="playerViews">
+
+    <div class="card-block" id="lobbyBlock">
+      <div class="section-title">Current game</div>
+      <div class="current-game-card">
+        <div class="mini-grid" id="lobbyPatternPreview"></div>
+        <div class="g-text">
+          <b id="lobbyPatternName">Any Line</b>
+          <span id="lobbyPatternDesc">Any full row, column, or diagonal</span>
+        </div>
+      </div>
+      <div class="game-figs">
+        <div><b id="lobbyStake">10 ETB</b><span>Stake / cartela</span></div>
+        <div><b id="lobbyPrize">80 ETB</b><span>Prize if you win</span></div>
+      </div>
+    </div>
+
+    <div class="card-block" id="joinBlock">
+      <div class="section-title">Add cartelas (1 – 100,000 available)</div>
+      <div class="cartela-grid" id="cartelaButtons">
+        <div class="cartela-btn" data-add="1">+1 random</div>
+        <div class="cartela-btn" data-add="2">+2 random</div>
+        <div class="cartela-btn" data-add="4">+4 random</div>
+        <div class="cartela-btn" data-add="10">+10 random</div>
+      </div>
+      <div class="search-row">
+        <input type="number" id="searchIdInput" placeholder="Cartela number (1-100000)" min="1" max="100000">
+        <button id="searchAddBtn">Add</button>
+      </div>
+      <div class="chips-wrap" id="selectedChips"></div>
+      <div class="pot-line"><span>Selected cartelas</span><b id="selectedCount">0</b></div>
+      <div class="pot-line"><span>Your entry cost</span><b id="entryCost">0 ETB</b></div>
+      <button class="ghost-btn" id="clearSelectionBtn" style="margin-top:10px;">Clear all</button>
+      <button class="primary-btn" id="joinBtn">Join round</button>
+    </div>
+
+    <div class="card-block" id="gameBlock" style="display:none;">
+      <div class="active-pattern-tag" id="activePatternTag">Game: Any Line</div>
+      <div class="section-title" id="drawSectionTitle">Live draw · new number every 10s</div>
+      <div class="caller">
+        <div class="ball empty" id="ballDisplay">—</div>
+        <div class="call-meta">
+          <div class="letter" id="ballLetter">WAITING</div>
+          <div id="ballCount" style="font-size:14px; color:var(--text); font-weight:700; margin-top:4px;">0 of 75 numbers called</div>
+        </div>
+      </div>
+      <div class="history" id="historyStrip"></div>
+
+      <div class="toggle-row">
+        <span>Auto-daub</span>
+        <div class="switch on" id="autoDaubToggle"><div class="knob"></div></div>
+      </div>
+
+      <div class="controls-row">
+        <button class="ghost-btn" id="newCardBtn">New cartelas</button>
+        <button class="ghost-btn" id="leaveBtn">Leave round</button>
+      </div>
+    </div>
+
+    <div class="card-block" id="cardsSection" style="display:none;">
+      <div class="section-title" id="cardsTitle">Your cartelas — scroll to see all</div>
+      <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+
+  </div>
+
+  <div class="footnote">
+    Demo mode only — wallet, admin settings, and payouts here are simulated locally on this device for testing gameplay. No real money moves in this prototype.
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const LS_WALLET = 'hb_demo_wallet';
+  const LS_ADMIN = 'hb_admin_config';
+  const CARD_POOL_SIZE = 100000;
+
+  // ---------- Pattern library (20+ game types) ----------
+  function unionCells(...groups){
+    const map = new Map();
+    groups.flat().forEach(([r,c])=>map.set(r+','+c, [r,c]));
+    return [...map.values()];
+  }
+  const ROWS = r => [0,1,2,3,4].map(c=>[r,c]);
+  const COLS = c => [0,1,2,3,4].map(r=>[r,c]);
+
+  const PATTERNS = {};
+  function addPattern(key, name, desc, cells){
+    PATTERNS[key] = { name, desc, previewCells: cells, check(m){ return cells.every(([r,c])=>m[r][c]); } };
+  }
+
+  const corners = [[0,0],[0,4],[4,0],[4,4]];
+  const diag1 = [0,1,2,3,4].map(i=>[i,i]);
+  const diag2 = [0,1,2,3,4].map(i=>[i,4-i]);
+  const sqTL=[[0,0],[0,1],[1,0],[1,1]], sqTR=[[0,3],[0,4],[1,3],[1,4]], sqBL=[[3,0],[3,1],[4,0],[4,1]], sqBR=[[3,3],[3,4],[4,3],[4,4]];
+  const outerFrame = (()=>{const a=[];for(let r=0;r<5;r++)for(let c=0;c<5;c++)if(r===0||r===4||c===0||c===4)a.push([r,c]);return a;})();
+  const diamondCells = [[0,2],[1,1],[1,3],[2,0],[2,4],[3,1],[3,3],[4,2]];
+  const frameNoCorners = outerFrame.filter(([r,c])=>!corners.some(([cr,cc])=>cr===r&&cc===c));
+
+  addPattern('tTwinCorners','Big T & Twin Corners','Top row and middle column, plus two separate corner blocks bottom-left and bottom-right', unionCells(ROWS(0), COLS(2), sqBL, sqBR));
+  addPattern('invTTwinCorners','Inverted T & Twin Corners','Bottom row and middle column, plus two separate corner blocks top-left and top-right', unionCells(ROWS(4), COLS(2), sqTL, sqTR));
+  addPattern('fourBlocks','Four Corner Blocks','A 2x2 block in all four corners at once', unionCells(sqTL, sqTR, sqBL, sqBR));
+  addPattern('bigH','Big H','Both outer columns joined by the middle row', unionCells(COLS(0), COLS(4), ROWS(2)));
+  addPattern('plusCorners','Plus & Corners','A full plus sign through the center, plus all four corners', unionCells(ROWS(2), COLS(2), corners));
+  addPattern('frameDiamond','Frame & Diamond','The outer border plus a diamond through the middle', unionCells(outerFrame, diamondCells));
+  addPattern('doubleCross','Double Cross','Both diagonals and the middle row and column, forming a star', unionCells(diag1, diag2, ROWS(2), COLS(2)));
+  addPattern('diagBlocksMid','Diagonal Blocks & Bar','Top-left and bottom-right blocks joined by the middle row', unionCells(sqTL, sqBR, ROWS(2)));
+  addPattern('antiDiagBlocksMid','Anti-Diagonal Blocks & Bar','Top-right and bottom-left blocks joined by the middle row', unionCells(sqTR, sqBL, ROWS(2)));
+  addPattern('frameNoCorners','Frame Without Corners','The outer border, excluding the four corner squares', frameNoCorners);
+  addPattern('tTwinCols','T & Twin Columns','Top row and middle column, plus both outer columns fully', unionCells(ROWS(0), COLS(2), COLS(0), COLS(4)));
+  addPattern('invTTwinCols','Inverted T & Twin Columns','Bottom row and middle column, plus both outer columns fully', unionCells(ROWS(4), COLS(2), COLS(0), COLS(4)));
+  addPattern('grandCross','Grand Cross & Blocks','All four corner blocks plus a full plus sign — nearly the whole card', unionCells(sqTL, sqTR, sqBL, sqBR, ROWS(2), COLS(2)));
+  addPattern('diamondCorners','Diamond & Corners','A diamond shape plus all four corners', unionCells(diamondCells, corners));
+  addPattern('zShape','Z Shape','Top row, the main diagonal, and bottom row forming a Z', unionCells(ROWS(0), diag1, ROWS(4)));
+  addPattern('lightning','Lightning Shape','Top row, the anti-diagonal, and bottom row', unionCells(ROWS(0), diag2, ROWS(4)));
+  addPattern('windmill','Windmill','Top-left and bottom-right blocks plus the anti-diagonal', unionCells(sqTL, sqBR, diag2));
+  addPattern('butterfly','Butterfly','Top-right and bottom-left blocks plus the main diagonal', unionCells(sqTR, sqBL, diag1));
+  addPattern('anchor','Anchor','Middle column and bottom row, with two arms at the top corners', unionCells(COLS(2), ROWS(4), [[0,0],[0,4]]));
+  addPattern('hourglass','Hourglass','Top and bottom rows joined by both diagonals meeting in the middle', unionCells(ROWS(0), ROWS(4), diag1, diag2));
+
+  const PATTERN_KEYS = Object.keys(PATTERNS);
+
+  function remainingToWin(cardObj){
+    const cells = PATTERNS[adminConfig.patternKey].previewCells;
+    return cells.filter(([r,c])=>!cardObj.marked[r][c]).length;
+  }
+
+  // ---------- Admin config ----------
+  function loadAdminConfig(){
+    try{
+      const raw = localStorage.getItem(LS_ADMIN);
+      if(raw){
+        const cfg = JSON.parse(raw);
+        if(PATTERNS[cfg.patternKey]) return cfg;
+      }
+    }catch(e){}
+    return { patternKey:'anyLine', stake:10, prize:80, countdown:15 };
+  }
+  function saveAdminConfig(cfg){ localStorage.setItem(LS_ADMIN, JSON.stringify(cfg)); }
+
+  // ---------- Seeded card pool (deterministic by cartela ID, 1..100000) ----------
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffleWith(arr, rand){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(rand()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
+  function gridForCartela(id){
+    const rand = mulberry32(id * 2654435761 % 2147483647);
+    const ranges = [[1,15],[16,30],[31,45],[46,60],[61,75]];
+    const cols = ranges.map(([min,max])=>{
+      const pool = []; for(let i=min;i<=max;i++) pool.push(i);
+      return shuffleWith(pool, rand).slice(0,5);
+    });
+    const grid = [];
+    for(let r=0;r<5;r++){
+      const row = [];
+      for(let c=0;c<5;c++) row.push((r===2&&c===2) ? 'FREE' : cols[c][r]);
+      grid.push(row);
+    }
+    return grid;
+  }
+  function freshMarked(grid){
+    return grid.map(row=>row.map(v=>v==='FREE'));
+  }
+
+  // ---------- State ----------
+  let wallet = parseInt(localStorage.getItem(LS_WALLET) || '500', 10);
+  let theme = localStorage.getItem('hb_theme') || 'dark';
+  let notifiedReady = new Set();
+  let adminConfig = loadAdminConfig();
+  let adminSelectedPattern = adminConfig.patternKey;
+  let selectedCartelas = []; // [{id, grid}]
+  let layoutCols = 2;
+  let cards = []; // [{id, grid, marked, blocked, won}]
+  let calledNumbers = [];
+  let callTimer = null;
+  let countdownTimer = null;
+  let autoDaub = true;
+  let roundActive = false;
+
+  // ---------- DOM refs ----------
+  const walletAmt = document.getElementById('walletAmt');
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const toastWrap = document.getElementById('toastWrap');
+  const adminToggleBtn = document.getElementById('adminToggleBtn');
+  const modeLabel = document.getElementById('modeLabel');
+  const adminBlock = document.getElementById('adminBlock');
+  const adminPatternList = document.getElementById('adminPatternList');
+  const adminStakeInput = document.getElementById('adminStakeInput');
+  const adminPrizeInput = document.getElementById('adminPrizeInput');
+  const adminCountdownInput = document.getElementById('adminCountdownInput');
+  const adminSaveBtn = document.getElementById('adminSaveBtn');
+  const adminCancelBtn = document.getElementById('adminCancelBtn');
+
+  const colMiniBox = document.getElementById('colMiniBox');
+  const colMiniSelect = document.getElementById('colMiniSelect');
+
+  const playerViews = document.getElementById('playerViews');
+  const lobbyBlock = document.getElementById('lobbyBlock');
+  const lobbyPatternPreview = document.getElementById('lobbyPatternPreview');
+  const lobbyPatternName = document.getElementById('lobbyPatternName');
+  const lobbyPatternDesc = document.getElementById('lobbyPatternDesc');
+  const lobbyStake = document.getElementById('lobbyStake');
+  const lobbyPrize = document.getElementById('lobbyPrize');
+
+  const joinBlock = document.getElementById('joinBlock');
+  const cartelaButtons = document.getElementById('cartelaButtons');
+  const searchIdInput = document.getElementById('searchIdInput');
+  const searchAddBtn = document.getElementById('searchAddBtn');
+  const selectedChips = document.getElementById('selectedChips');
+  const selectedCount = document.getElementById('selectedCount');
+  const entryCost = document.getElementById('entryCost');
+  const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+  const joinBtn = document.getElementById('joinBtn');
+
+  const gameBlock = document.getElementById('gameBlock');
+  const activePatternTag = document.getElementById('activePatternTag');
+  const drawSectionTitle = document.getElementById('drawSectionTitle');
+  const ballDisplay = document.getElementById('ballDisplay');
+  const ballLetter = document.getElementById('ballLetter');
+  const ballCount = document.getElementById('ballCount');
+  const historyStrip = document.getElementById('historyStrip');
+  const autoDaubToggle = document.getElementById('autoDaubToggle');
+  const newCardBtn = document.getElementById('newCardBtn');
+  const leaveBtn = document.getElementById('leaveBtn');
+
+  const cardsSection = document.getElementById('cardsSection');
+  const cardsTitle = document.getElementById('cardsTitle');
+  const cardsGrid = document.getElementById('cardsGrid');
+
+  const winBanner = document.getElementById('winBanner');
+
+  function renderWallet(){
+    walletAmt.textContent = wallet + ' ETB';
+    localStorage.setItem(LS_WALLET, wallet);
+  }
+  renderWallet();
+
+  function applyTheme(){
+    document.documentElement.setAttribute('data-theme', theme);
+    themeToggleBtn.textContent = theme === 'light' ? '☀️' : '🌙';
+    localStorage.setItem('hb_theme', theme);
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if(metaTheme) metaTheme.setAttribute('content', theme === 'light' ? '#f5f3ee' : '#15161a');
+  }
+  applyTheme();
+
+  themeToggleBtn.addEventListener('click', ()=>{
+    theme = theme === 'light' ? 'dark' : 'light';
+    applyTheme();
+  });
+
+  function showToast(message){
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = message;
+    toastWrap.appendChild(t);
+    requestAnimationFrame(()=> t.classList.add('show'));
+    setTimeout(()=>{
+      t.classList.remove('show');
+      setTimeout(()=> t.remove(), 250);
+    }, 3200);
+  }
+
+  function buildMiniGrid(previewCells){
+    const grid = document.createElement('div');
+    grid.className = 'mini-grid';
+    for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+      const cell = document.createElement('div');
+      if(previewCells.some(([pr,pc])=>pr===r && pc===c)) cell.classList.add('on');
+      grid.appendChild(cell);
+    }
+    return grid;
+  }
+
+  function renderPatternPicker(container, selectedKey, onPick){
+    container.innerHTML = '';
+    PATTERN_KEYS.forEach(key=>{
+      const p = PATTERNS[key];
+      const opt = document.createElement('div');
+      opt.className = 'pattern-opt' + (key===selectedKey ? ' active' : '');
+      opt.appendChild(buildMiniGrid(p.previewCells));
+      const textWrap = document.createElement('div');
+      textWrap.className = 'p-text';
+      textWrap.innerHTML = '<b>'+p.name+'</b><span>'+p.desc+'</span>';
+      opt.appendChild(textWrap);
+      opt.addEventListener('click', ()=> onPick(key));
+      container.appendChild(opt);
+    });
+  }
+
+  function renderLobbySummary(){
+    const p = PATTERNS[adminConfig.patternKey];
+    lobbyPatternPreview.innerHTML = '';
+    lobbyPatternPreview.appendChild(buildMiniGrid(p.previewCells));
+    lobbyPatternName.textContent = p.name;
+    lobbyPatternDesc.textContent = p.desc;
+    lobbyStake.textContent = adminConfig.stake + ' ETB';
+    lobbyPrize.textContent = adminConfig.prize + ' ETB';
+    activePatternTag.textContent = 'Game: ' + p.name;
+    refreshJoinStats();
+  }
+
+  function refreshJoinStats(){
+    selectedCount.textContent = selectedCartelas.length;
+    entryCost.textContent = (adminConfig.stake * selectedCartelas.length) + ' ETB';
+    renderChips();
+  }
+
+  function renderChips(){
+    selectedChips.innerHTML = '';
+    selectedCartelas.forEach(sc=>{
+      const chip = document.createElement('div');
+      chip.className = 'chip-id';
+      chip.innerHTML = '#' + sc.id + ' <button>&times;</button>';
+      chip.querySelector('button').addEventListener('click', ()=>{
+        selectedCartelas = selectedCartelas.filter(x=>x.id!==sc.id);
+        refreshJoinStats();
+      });
+      selectedChips.appendChild(chip);
+    });
+  }
+
+  function addCartelaById(id){
+    id = Math.max(1, Math.min(CARD_POOL_SIZE, id));
+    if(selectedCartelas.some(sc=>sc.id===id)){ alert('Cartela #' + id + ' is already in your selection.'); return; }
+    selectedCartelas.push({ id, grid: gridForCartela(id) });
+    refreshJoinStats();
+  }
+
+  cartelaButtons.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.cartela-btn');
+    if(!btn) return;
+    const count = parseInt(btn.dataset.add, 10);
+    let added = 0, guard = 0;
+    while(added < count && guard < count*50){
+      guard++;
+      const randId = Math.floor(Math.random()*CARD_POOL_SIZE)+1;
+      if(!selectedCartelas.some(sc=>sc.id===randId)){
+        selectedCartelas.push({ id: randId, grid: gridForCartela(randId) });
+        added++;
+      }
+    }
+    refreshJoinStats();
+  });
+
+  searchAddBtn.addEventListener('click', ()=>{
+    const val = parseInt(searchIdInput.value, 10);
+    if(!val || val < 1 || val > CARD_POOL_SIZE){ alert('Enter a cartela number between 1 and ' + CARD_POOL_SIZE + '.'); return; }
+    addCartelaById(val);
+    searchIdInput.value = '';
+  });
+
+  clearSelectionBtn.addEventListener('click', ()=>{
+    selectedCartelas = [];
+    refreshJoinStats();
+  });
+
+  colMiniSelect.addEventListener('change', ()=>{
+    layoutCols = parseInt(colMiniSelect.value, 10);
+    renderCardsGrid();
+  });
+
+  // ---------- Admin panel ----------
+  function adminPickHandler(key){
+    adminSelectedPattern = key;
+    renderPatternPicker(adminPatternList, adminSelectedPattern, adminPickHandler);
+  }
+
+  adminToggleBtn.addEventListener('click', ()=>{
+    adminSelectedPattern = adminConfig.patternKey;
+    renderPatternPicker(adminPatternList, adminSelectedPattern, adminPickHandler);
+    adminStakeInput.value = adminConfig.stake;
+    adminPrizeInput.value = adminConfig.prize;
+    adminCountdownInput.value = adminConfig.countdown;
+    adminBlock.style.display = 'block';
+    playerViews.style.display = 'none';
+    modeLabel.textContent = 'Prototype · admin view';
+  });
+
+  adminCancelBtn.addEventListener('click', ()=>{
+    adminBlock.style.display = 'none';
+    playerViews.style.display = 'block';
+    modeLabel.textContent = 'Prototype · player view';
+  });
+
+  adminSaveBtn.addEventListener('click', ()=>{
+    const stakeVal = Math.max(1, parseInt(adminStakeInput.value,10) || 10);
+    const prizeVal = Math.max(1, parseInt(adminPrizeInput.value,10) || 80);
+    const countdownVal = Math.max(3, Math.min(60, parseInt(adminCountdownInput.value,10) || 15));
+    adminConfig = { patternKey: adminSelectedPattern, stake: stakeVal, prize: prizeVal, countdown: countdownVal };
+    saveAdminConfig(adminConfig);
+    renderLobbySummary();
+    adminBlock.style.display = 'none';
+    playerViews.style.display = 'block';
+    modeLabel.textContent = 'Prototype · player view';
+  });
+
+  // ---------- Round / card rendering ----------
+  function letterFor(n){
+    if(n<=15) return 'B';
+    if(n<=30) return 'I';
+    if(n<=45) return 'N';
+    if(n<=60) return 'G';
+    return 'O';
+  }
+  function pickUnique(count, min, max, exclude){
+    const pool = [];
+    for(let i=min;i<=max;i++) if(!exclude || !exclude.includes(i)) pool.push(i);
+    for(let i=pool.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [pool[i],pool[j]] = [pool[j],pool[i]];
+    }
+    return pool.slice(0,count);
+  }
+
+  function checkAndNotifyReady(c){
+    if(!c.blocked && !c.won && remainingToWin(c) === 0 && !notifiedReady.has(c.id)){
+      notifiedReady.add(c.id);
+      showToast('🔔 Cartela #' + c.id + ' has finished — call BINGO!');
+    }
+  }
+
+  function renderCardsGrid(){
+    cardsGrid.style.gridTemplateColumns = 'repeat(' + layoutCols + ', 1fr)';
+    cardsGrid.innerHTML = '';
+
+    const ordered = [...cards].sort((a,b)=>{
+      const rank = c => c.won ? 0 : (c.blocked ? 2 : 1);
+      const ra = rank(a), rb = rank(b);
+      if(ra !== rb) return ra - rb; // won first, then active, then blocked last
+      if(ra === 1) return remainingToWin(a) - remainingToWin(b); // among active, closest to winning first
+      return 0;
+    });
+
+    ordered.forEach((c)=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'mini-card';
+
+      const head = document.createElement('div');
+      head.className = 'mini-card-head';
+      const statusClass = c.won ? 'won' : (c.blocked ? 'blocked' : 'active');
+      const statusText = c.won ? 'won' : (c.blocked ? 'blocked' : 'active');
+      head.innerHTML = '<b>Cartela<span class="cid">#' + c.id + '</span></b><span class="mini-status ' + statusClass + '">' + statusText + '</span>';
+      wrap.appendChild(head);
+
+      const grid = document.createElement('div');
+      grid.className = 'bingo-grid' + (c.blocked ? ' blocked-grid' : '');
+      for(let r=0;r<5;r++){
+        for(let col=0;col<5;col++){
+          const val = c.grid[r][col];
+          const cell = document.createElement('div');
+          cell.className = 'cell' + (val==='FREE' ? ' free' : '') + (c.marked[r][col] ? ' marked' : '');
+          cell.textContent = val==='FREE' ? 'FR' : val;
+          cell.addEventListener('click', ()=>{
+            if(c.blocked || c.won || val==='FREE' || !roundActive) return;
+            if(!calledNumbers.includes(val)) return;
+            c.marked[r][col] = !c.marked[r][col];
+            checkAndNotifyReady(c);
+            renderCardsGrid();
+          });
+          grid.appendChild(cell);
+        }
+      }
+      wrap.appendChild(grid);
+
+      const btn = document.createElement('button');
+      btn.className = 'mini-bingo-btn' + (c.won ? ' won-btn' : '');
+      btn.textContent = c.won ? 'Won!' : 'Call BINGO';
+      btn.disabled = !!c.blocked || !!c.won || !roundActive;
+      btn.addEventListener('click', ()=> handleCallBingo(c));
+      wrap.appendChild(btn);
+
+      const foot = document.createElement('div');
+      foot.className = 'mini-card-foot';
+      foot.textContent = c.won ? 'You won on this cartela!' : (c.blocked ? 'Blocked for this round' : (remainingToWin(c) + ' number' + (remainingToWin(c)===1?'':'s') + ' left for BINGO'));
+      wrap.appendChild(foot);
+
+      cardsGrid.appendChild(wrap);
+    });
+  }
+
+  function checkWin(cardObj){
+    return PATTERNS[adminConfig.patternKey].check(cardObj.marked);
+  }
+
+  function handleCallBingo(c){
+    if(!roundActive) return;
+    if(c.blocked || c.won) return;
+    if(checkWin(c)){
+      c.won = true;
+      wallet += adminConfig.prize;
+      renderWallet();
+      winBanner.textContent = '🎉 BINGO confirmed! ' + PATTERNS[adminConfig.patternKey].name + ' on Cartela #' + c.id + ' — you won ' + adminConfig.prize + ' ETB (demo).';
+      winBanner.classList.add('show');
+      clearInterval(callTimer);
+      roundActive = false;
+      renderCardsGrid();
+    } else {
+      c.blocked = true;
+      renderCardsGrid();
+    }
+  }
+
+  function startRound(){
+    if(selectedCartelas.length === 0){ alert('Add at least one cartela before joining.'); return; }
+    const totalCost = adminConfig.stake * selectedCartelas.length;
+    if(wallet < totalCost){ alert('Not enough demo balance for ' + selectedCartelas.length + ' cartela(s) at this stake.'); return; }
+    wallet -= totalCost;
+    renderWallet();
+
+    calledNumbers = [];
+    historyStrip.innerHTML = '';
+    winBanner.classList.remove('show');
+    notifiedReady.clear();
+
+    cards = selectedCartelas.map(sc => ({ id: sc.id, grid: sc.grid, marked: freshMarked(sc.grid), blocked:false, won:false }));
+
+    cardsTitle.textContent = cards.length > 1 ? 'Your ' + cards.length + ' cartelas — scroll to see all' : 'Your cartela';
+    lobbyBlock.style.display = 'none';
+    joinBlock.style.display = 'none';
+    gameBlock.style.display = 'block';
+    cardsSection.style.display = 'block';
+    colMiniBox.style.display = 'flex';
+    colMiniSelect.value = String(layoutCols);
+    renderCardsGrid();
+
+    roundActive = false;
+    let secondsLeft = adminConfig.countdown;
+    drawSectionTitle.textContent = 'Get ready · new number every 10s';
+    ballDisplay.className = 'ball countdown';
+    ballDisplay.textContent = secondsLeft;
+    ballLetter.textContent = 'STARTING IN';
+    ballCount.textContent = '0 of 75 numbers called';
+
+    countdownTimer = setInterval(()=>{
+      secondsLeft--;
+      if(secondsLeft <= 0){
+        clearInterval(countdownTimer);
+        roundActive = true;
+        renderCardsGrid();
+        callTimer = setInterval(callNumber, 10000);
+        callNumber();
+      } else {
+        ballDisplay.textContent = secondsLeft;
+      }
+    }, 1000);
+  }
+
+  function callNumber(){
+    if(calledNumbers.length >= 75){ clearInterval(callTimer); return; }
+    const next = pickUnique(1,1,75,calledNumbers)[0];
+    calledNumbers.push(next);
+    const letter = letterFor(next);
+    ballDisplay.textContent = next;
+    ballDisplay.className = 'ball';
+    ballLetter.textContent = letter + ' · ' + next;
+    ballCount.textContent = calledNumbers.length + ' of 75 numbers called';
+
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = next;
+    historyStrip.prepend(chip);
+
+    if(autoDaub){
+      cards.forEach(c=>{
+        for(let r=0;r<5;r++) for(let col=0;col<5;col++){
+          if(c.grid[r][col] === next) c.marked[r][col] = true;
+        }
+      });
+    }
+
+    cards.forEach(c=>{ checkAndNotifyReady(c); });
+
+    renderCardsGrid();
+  }
+
+  newCardBtn.addEventListener('click', ()=>{
+    if(!roundActive) return;
+    cards = cards.map(c=>{
+      const grid = gridForCartela(c.id);
+      return { id:c.id, grid, marked: freshMarked(grid), blocked:false, won:false };
+    });
+    renderCardsGrid();
+  });
+
+  leaveBtn.addEventListener('click', ()=>{
+    clearInterval(callTimer);
+    clearInterval(countdownTimer);
+    roundActive = false;
+    gameBlock.style.display = 'none';
+    cardsSection.style.display = 'none';
+    colMiniBox.style.display = 'none';
+    lobbyBlock.style.display = 'block';
+    joinBlock.style.display = 'block';
+    refreshJoinStats();
+  });
+
+  autoDaubToggle.addEventListener('click', ()=>{
+    autoDaub = !autoDaub;
+    autoDaubToggle.classList.toggle('on', autoDaub);
+  });
+
+  joinBtn.addEventListener('click', startRound);
+
+  renderLobbySummary();
+  refreshJoinStats();
+})();
+</script>
+</body>
+</html>
